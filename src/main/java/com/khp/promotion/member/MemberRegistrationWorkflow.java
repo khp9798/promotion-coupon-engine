@@ -5,20 +5,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class MemberRegistrationWorkflow {
 
-    private final MemberRegistrationTransaction registrationTransaction;
-    private final MemberRegisteredEventPublisher eventPublisher;
+	private final MemberRegistrationTransaction registrationTransaction;
 
-    public MemberRegistrationWorkflow(
-            MemberRegistrationTransaction registrationTransaction,
-            MemberRegisteredEventPublisher eventPublisher
-    ) {
-        this.registrationTransaction = registrationTransaction;
-        this.eventPublisher = eventPublisher;
-    }
+	public MemberRegistrationWorkflow(
+		MemberRegistrationTransaction registrationTransaction
+	) {
+		this.registrationTransaction = registrationTransaction;
+	}
 
-    public Member register(String email) {
-        Member member = registrationTransaction.createMember(email);
-        eventPublisher.publish(new MemberRegistered(member.getId()));
-        return member;
-    }
+	public Member register(String email) {
+		return registrationTransaction.createMember(email);
+	}
 }
