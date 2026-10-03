@@ -38,11 +38,18 @@ public class SignupCouponOutboxEvent {
 	@Column(nullable = false)
 	private Instant occurredAt;
 
+	private Instant publishedAt;
+
 	public SignupCouponOutboxEvent(Long memberId, Instant occurredAt) {
 		this.memberId = memberId;
 		this.eventType = "MEMBER_REGISTERED";
 		this.status = OutboxStatus.PENDING;
 		this.occurredAt = occurredAt;
+	}
+
+	public void completePublication(Instant publishedAt) {
+		this.status = OutboxStatus.PUBLISHED;
+		this.publishedAt = publishedAt;
 	}
 
 }
