@@ -54,4 +54,20 @@ class SignupCouponOutboxProcessorTest {
 		assertThat(outboxEventRepository.findAll().get(0).getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
 		assertThat(outboxEventRepository.findAll().get(0).getPublishedAt()).isNotNull();
 	}
+
+	@Test
+	void doesNotIssueCouponAgainWhenProcessedSequentially() {
+		String email = "sequential-member@example.com";
+
+		Member member = registrationWorkflow.register(email);
+
+		final int batchSize = 10;
+
+		assertThat(signupCouponOutboxProcessor.processPending(batchSize)).isOne();
+		assertThat(signupCouponOutboxProcessor.processPending(batchSize)).isZero();
+		assertThat(memberCouponRepository.countByMemberId(member.getId())).isOne();
+		assertThat(outboxEventRepository.countByMemberId(member.getId())).isOne();
+		assertThat(outboxEventRepository.findAll().get(0).getStatus())
+			.isEqualTo(OutboxStatus.PUBLISHED);
+	}
 }
