@@ -40,6 +40,12 @@ public class SignupCouponOutboxEvent {
 
 	private Instant publishedAt;
 
+	private int retryCount;
+
+	private String lastError;
+
+	private Instant lastFailedAt;
+
 	public SignupCouponOutboxEvent(Long memberId, Instant occurredAt) {
 		this.memberId = memberId;
 		this.eventType = "MEMBER_REGISTERED";
@@ -52,4 +58,12 @@ public class SignupCouponOutboxEvent {
 		this.publishedAt = publishedAt;
 	}
 
+
+	public void recordFailure(String lastError, Instant lastFailedAt){
+		this.lastError = lastError;
+		this.lastFailedAt = lastFailedAt;
+		this.retryCount++;
+		if(this.retryCount >= 3)
+			this.status = OutboxStatus.FAILED;
+	}
 }

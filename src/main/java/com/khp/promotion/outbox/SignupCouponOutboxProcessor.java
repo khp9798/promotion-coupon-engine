@@ -34,7 +34,8 @@ public class SignupCouponOutboxProcessor {
 				handler.handle(event.getId());
 				successCount++;
 			}catch (RuntimeException e){
-				log.error("아웃박스 이벤트 처리 실, eventId = {}",event.getId(), e);
+				log.error("아웃박스 이벤트 처리 실패, eventId = {}",event.getId(), e);
+				handler.recordFailure(event.getId(), e.getMessage());
 			}
 		}
 

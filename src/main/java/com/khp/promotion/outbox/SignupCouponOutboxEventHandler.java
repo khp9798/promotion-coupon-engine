@@ -33,4 +33,13 @@ public class SignupCouponOutboxEventHandler {
 		// 4. PUBLISHED로 상태 변경
 		event.completePublication(Instant.now());
 	}
+
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void recordFailure(Long eventId, String errorMessage) {
+		// 이벤트 조회
+		SignupCouponOutboxEvent event = signupCouponOutboxEventRepository.findById(eventId).orElseThrow();
+		// event.recordFailure(errorMessage, Instant.now()) 호출
+		event.recordFailure(errorMessage,Instant.now());
+	}
 }

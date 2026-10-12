@@ -87,7 +87,7 @@ class SignupCouponOutboxProcessorTest {
 		Member memberB = registrationWorkflow.register(email2);
 		Member memberC = registrationWorkflow.register(email3);
 
-		doThrow(new IllegalStateException("simulated coupon issue failure"))
+		doThrow(new IllegalStateException("coupon provider timeout"))
 			.when(signupCouponIssuer)
 			.issue(memberB.getId());
 
@@ -113,5 +113,10 @@ class SignupCouponOutboxProcessorTest {
 
 		assertThat(eventC.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
 		assertThat(eventC.getPublishedAt()).isNotNull();
+
+		assertThat(eventB.getRetryCount()).isOne();
+		assertThat(eventB.getLastError())
+			.isEqualTo("coupon provider timeout");
+		assertThat(eventB.getLastFailedAt()).isNotNull();
 	}
 }

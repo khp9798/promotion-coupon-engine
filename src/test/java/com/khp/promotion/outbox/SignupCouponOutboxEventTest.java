@@ -22,4 +22,24 @@ class SignupCouponOutboxEventTest {
 		assertThat(event.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
 		assertThat(event.getPublishedAt()).isEqualTo(publishedAt);
 	}
+
+	@Test
+	void changesStatusToFailedAfterThreeFailures(){
+		SignupCouponOutboxEvent event =
+			new SignupCouponOutboxEvent(100L, OCCURRED_AT);
+
+		event.recordFailure("first failure", OCCURRED_AT.plusSeconds(60));
+		event.recordFailure("second failure", OCCURRED_AT.plusSeconds(120));
+
+		assertThat(event.getRetryCount()).isEqualTo(2);
+		assertThat(event.getStatus()).isEqualTo(OutboxStatus.PENDING);
+
+		Instant thirdFailedAt = OCCURRED_AT.plusSeconds(180);
+		event.recordFailure("third failure", thirdFailedAt);
+
+		assertThat(event.getRetryCount()).isEqualTo(3);
+		assertThat(event.getStatus()).isEqualTo(OutboxStatus.FAILED);
+		assertThat(event.getLastError()).isEqualTo("third failure");
+		assertThat(event.getLastFailedAt()).isEqualTo(thirdFailedAt);
+	}
 }
