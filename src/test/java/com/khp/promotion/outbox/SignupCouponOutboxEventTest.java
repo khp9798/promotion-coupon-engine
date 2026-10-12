@@ -28,12 +28,16 @@ class SignupCouponOutboxEventTest {
 		SignupCouponOutboxEvent event =
 			new SignupCouponOutboxEvent(100L, OCCURRED_AT);
 
+		event.startProcessing(OCCURRED_AT.plusSeconds(60));
 		event.recordFailure("first failure", OCCURRED_AT.plusSeconds(60));
+
+		event.startProcessing(OCCURRED_AT.plusSeconds(120));
 		event.recordFailure("second failure", OCCURRED_AT.plusSeconds(120));
 
 		assertThat(event.getRetryCount()).isEqualTo(2);
 		assertThat(event.getStatus()).isEqualTo(OutboxStatus.PENDING);
 
+		event.startProcessing(OCCURRED_AT.plusSeconds(180));
 		Instant thirdFailedAt = OCCURRED_AT.plusSeconds(180);
 		event.recordFailure("third failure", thirdFailedAt);
 
@@ -78,5 +82,28 @@ class SignupCouponOutboxEventTest {
 			.isEqualTo(OutboxStatus.PUBLISHED);
 		assertThat(event.getProcessingStartedAt())
 			.isNull();
+	}
+
+	@Test
+	void returnsToPendingAfterRetryableFailure() {
+		SignupCouponOutboxEvent event =
+			new SignupCouponOutboxEvent(100L, OCCURRED_AT);
+
+		Instant processingStartedAt =
+			OCCURRED_AT.plusSeconds(10);
+		Instant failedAt =
+			OCCURRED_AT.plusSeconds(20);
+
+		event.startProcessing(processingStartedAt);
+		event.recordFailure("temporary failure", failedAt);
+
+		assertThat(event.getRetryCount()).isOne();
+		assertThat(event.getStatus())
+			.isEqualTo(OutboxStatus.PENDING);
+		assertThat(event.getProcessingStartedAt()).isNull();
+		assertThat(event.getLastError())
+			.isEqualTo("temporary failure");
+		assertThat(event.getLastFailedAt())
+			.isEqualTo(failedAt);
 	}
 }

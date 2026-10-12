@@ -60,23 +60,28 @@ public class SignupCouponOutboxEvent {
 		this.publishedAt = publishedAt;
 	}
 
-
-	public void recordFailure(String lastError, Instant lastFailedAt){
+	public void recordFailure(String lastError, Instant lastFailedAt) {
 		this.lastError = lastError;
 		this.lastFailedAt = lastFailedAt;
+
 		this.retryCount++;
-		if(this.retryCount >= 3)
+		if (this.retryCount >= 3) {
 			this.status = OutboxStatus.FAILED;
+		} else {
+			this.status = OutboxStatus.PENDING;
+		}
+
+		this.processingStartedAt = null;
 	}
 
 	public void startProcessing(Instant processingStartedAt) {
 		// 상태 확인
-		if(this.status == OutboxStatus.PENDING){
+		if (this.status == OutboxStatus.PENDING) {
 			// PROCESSING으로 변경
 			this.status = OutboxStatus.PROCESSING;
 			// 처리 시작 시각 저장
 			this.processingStartedAt = processingStartedAt;
-		}else{
+		} else {
 			throw new IllegalStateException(
 				"PENDING 상태의 이벤트만 처리할 수 있습니다."
 			);
