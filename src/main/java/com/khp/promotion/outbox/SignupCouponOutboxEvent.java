@@ -46,6 +46,8 @@ public class SignupCouponOutboxEvent {
 
 	private Instant lastFailedAt;
 
+	private Instant processingStartedAt;
+
 	public SignupCouponOutboxEvent(Long memberId, Instant occurredAt) {
 		this.memberId = memberId;
 		this.eventType = "MEMBER_REGISTERED";
@@ -65,5 +67,20 @@ public class SignupCouponOutboxEvent {
 		this.retryCount++;
 		if(this.retryCount >= 3)
 			this.status = OutboxStatus.FAILED;
+	}
+
+	public void startProcessing(Instant processingStartedAt) {
+		// 상태 확인
+		if(this.status == OutboxStatus.PENDING){
+			// PROCESSING으로 변경
+			this.status = OutboxStatus.PROCESSING;
+			// 처리 시작 시각 저장
+			this.processingStartedAt = processingStartedAt;
+		}else{
+			throw new IllegalStateException(
+				"PENDING 상태의 이벤트만 처리할 수 있습니다."
+			);
+		}
+
 	}
 }

@@ -1,6 +1,6 @@
 package com.khp.promotion.outbox;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.time.Instant;
 
@@ -41,5 +41,42 @@ class SignupCouponOutboxEventTest {
 		assertThat(event.getStatus()).isEqualTo(OutboxStatus.FAILED);
 		assertThat(event.getLastError()).isEqualTo("third failure");
 		assertThat(event.getLastFailedAt()).isEqualTo(thirdFailedAt);
+	}
+
+	@Test
+	void startsProcessingPendingEvent() {
+		SignupCouponOutboxEvent event =
+			new SignupCouponOutboxEvent(100L, OCCURRED_AT);
+
+		Instant processingStartedAt =
+			OCCURRED_AT.plusSeconds(10);
+
+		event.startProcessing(processingStartedAt);
+
+		assertThat(event.getStatus())
+			.isEqualTo(OutboxStatus.PROCESSING);
+		assertThat(event.getProcessingStartedAt())
+			.isEqualTo(processingStartedAt);
+	}
+
+	@Test
+	void cannotStartProcessingPublishedEvent() {
+		SignupCouponOutboxEvent event =
+			new SignupCouponOutboxEvent(100L, OCCURRED_AT);
+
+		event.completePublication(OCCURRED_AT);
+
+		Instant processingStartedAt =
+			OCCURRED_AT.plusSeconds(10);
+
+		assertThatThrownBy(
+			() -> event.startProcessing(processingStartedAt)
+		)
+			.isInstanceOf(IllegalStateException.class);
+
+		assertThat(event.getStatus())
+			.isEqualTo(OutboxStatus.PUBLISHED);
+		assertThat(event.getProcessingStartedAt())
+			.isNull();
 	}
 }
