@@ -1,40 +1,44 @@
 package com.khp.promotion.outbox;
 
-import java.time.Instant;
 import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.khp.promotion.coupon.SignupCouponIssuer;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class SignupCouponOutboxProcessor {
 
 	private final SignupCouponOutboxEventRepository signupCouponOutboxEventRepository;
-	private final SignupCouponIssuer signupCouponIssuer;
+	private final SignupCouponOutboxEventHandler handler;
 
 	public SignupCouponOutboxProcessor(SignupCouponOutboxEventRepository signupCouponOutboxEventRepository,
-		SignupCouponIssuer signupCouponIssuer) {
+		SignupCouponOutboxEventHandler handler) {
 		this.signupCouponOutboxEventRepository = signupCouponOutboxEventRepository;
-		this.signupCouponIssuer = signupCouponIssuer;
+		this.handler = handler;
 	}
 
-	@Transactional
 	public int processPending(int batchSize) {
 		Pageable pageable = PageRequest.of(0, batchSize);
 
 		List<SignupCouponOutboxEvent> signupCouponOutboxEventList = signupCouponOutboxEventRepository.findByStatusOrderByOccurredAtAsc(
 			OutboxStatus.PENDING, pageable);
 
+		int successCount = 0;
+
 		for (SignupCouponOutboxEvent event : signupCouponOutboxEventList) {
-			signupCouponIssuer.issue(event.getMemberId());
-			event.completePublication(Instant.now());
+			try{
+				handler.handle(event.getId());
+				successCount++;
+			}catch (RuntimeException e){
+				log.error("아웃박스 이벤트 처리 실, eventId = {}",event.getId(), e);
+			}
 		}
 
-		return signupCouponOutboxEventList.size();
+		return successCount;
 	}
 
 }
