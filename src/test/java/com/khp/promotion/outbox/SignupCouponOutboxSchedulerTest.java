@@ -4,15 +4,13 @@ import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.Test;
 
-public class SignupCouponOutboxSchedulerTest {
+class SignupCouponOutboxSchedulerTest {
 
 	@Test
 	void delegatesProcessingWithConfiguredBatchSize() {
-		SignupCouponOutboxProcessor processor =
-			mock(SignupCouponOutboxProcessor.class);
+		SignupCouponOutboxProcessor processor = mock(SignupCouponOutboxProcessor.class);
 
-		SignupCouponOutboxScheduler scheduler =
-			new SignupCouponOutboxScheduler(processor, 100);
+		SignupCouponOutboxScheduler scheduler = new SignupCouponOutboxScheduler(processor, 100);
 
 		scheduler.processPendingEvents();
 
