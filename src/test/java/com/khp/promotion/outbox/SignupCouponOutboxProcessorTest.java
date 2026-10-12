@@ -119,4 +119,31 @@ class SignupCouponOutboxProcessorTest {
 			.isEqualTo("coupon provider timeout");
 		assertThat(eventB.getLastFailedAt()).isNotNull();
 	}
+
+	@Test
+	void stopsRetryingAfterThreeFailures() {
+		String email = "person@email.com";
+
+		Member member = registrationWorkflow.register(email);
+
+		doThrow(new IllegalStateException("persistent coupon issue failure"))
+			.when(signupCouponIssuer)
+			.issue(member.getId());
+
+		for (int i = 0; i < 3; i++) {
+			assertThat(signupCouponOutboxProcessor.processPending(100)).isZero();
+		}
+
+		SignupCouponOutboxEvent event = outboxEventRepository.findByMemberId(member.getId()).orElseThrow();
+
+		assertThat(event.getRetryCount()).isEqualTo(3);
+		assertThat(event.getStatus()).isEqualTo(OutboxStatus.FAILED);
+		assertThat(event.getLastError()).isEqualTo("persistent coupon issue failure");
+		assertThat(event.getLastFailedAt()).isNotNull();
+
+		assertThat(signupCouponOutboxProcessor.processPending(100)).isZero();
+
+		verify(signupCouponIssuer, times(3))
+			.issue(member.getId());
+	}
 }
